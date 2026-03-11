@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "@/lib/router";
 import { authApi } from "../api/auth";
+import { healthApi } from "../api/health";
 import { queryKeys } from "../lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
@@ -18,6 +19,9 @@ export function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const nameInputId = useId();
+  const emailInputId = useId();
+  const passwordInputId = useId();
 
   const nextPath = useMemo(() => searchParams.get("next") || "/", [searchParams]);
   const { data: session, isLoading: isSessionLoading } = useQuery({
@@ -25,12 +29,25 @@ export function AuthPage() {
     queryFn: () => authApi.getSession(),
     retry: false,
   });
+  const { data: health, isLoading: isHealthLoading } = useQuery({
+    queryKey: ["health"],
+    queryFn: () => healthApi.get(),
+    retry: false,
+  });
+  const signUpDisabled = health?.authDisableSignUp === true;
 
   useEffect(() => {
     if (session) {
       navigate(nextPath, { replace: true });
     }
   }, [session, navigate, nextPath]);
+
+  useEffect(() => {
+    if (signUpDisabled && mode === "sign_up") {
+      setMode("sign_in");
+      setError(null);
+    }
+  }, [mode, signUpDisabled]);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -60,7 +77,7 @@ export function AuthPage() {
     password.trim().length >= 8 &&
     (mode === "sign_in" || name.trim().length > 0);
 
-  if (isSessionLoading) {
+  if (isSessionLoading || isHealthLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <p className="text-sm text-muted-foreground">Loading…</p>
@@ -96,30 +113,31 @@ export function AuthPage() {
           >
             {mode === "sign_up" && (
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Name</label>
+                <label htmlFor={nameInputId} className="text-xs text-muted-foreground mb-1 block">Name</label>
                 <input
+                  id={nameInputId}
                   className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   autoComplete="name"
-                  autoFocus
                 />
               </div>
             )}
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Email</label>
+              <label htmlFor={emailInputId} className="text-xs text-muted-foreground mb-1 block">Email</label>
               <input
+                id={emailInputId}
                 className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 autoComplete="email"
-                autoFocus={mode === "sign_in"}
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Password</label>
+              <label htmlFor={passwordInputId} className="text-xs text-muted-foreground mb-1 block">Password</label>
               <input
+                id={passwordInputId}
                 className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
                 type="password"
                 value={password}
@@ -137,19 +155,25 @@ export function AuthPage() {
             </Button>
           </form>
 
-          <div className="mt-5 text-sm text-muted-foreground">
-            {mode === "sign_in" ? "Need an account?" : "Already have an account?"}{" "}
-            <button
-              type="button"
-              className="font-medium text-foreground underline underline-offset-2"
-              onClick={() => {
-                setError(null);
-                setMode(mode === "sign_in" ? "sign_up" : "sign_in");
-              }}
-            >
-              {mode === "sign_in" ? "Create one" : "Sign in"}
-            </button>
-          </div>
+          {signUpDisabled ? (
+            <p className="mt-5 text-sm text-muted-foreground">
+              Sign up is disabled for this instance. Ask your Paperclip admin to provision access.
+            </p>
+          ) : (
+            <div className="mt-5 text-sm text-muted-foreground">
+              {mode === "sign_in" ? "Need an account?" : "Already have an account?"}{" "}
+              <button
+                type="button"
+                className="font-medium text-foreground underline underline-offset-2"
+                onClick={() => {
+                  setError(null);
+                  setMode(mode === "sign_in" ? "sign_up" : "sign_in");
+                }}
+              >
+                {mode === "sign_in" ? "Create one" : "Sign in"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
