@@ -954,7 +954,6 @@ export function NewIssueDialog() {
             Labels
           </button>
 
-          {/* Attach image chip */}
           <input
             ref={attachInputRef}
             type="file"
@@ -966,9 +965,10 @@ export function NewIssueDialog() {
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground"
             onClick={() => attachInputRef.current?.click()}
             disabled={uploadDescriptionImage.isPending}
+            title="Embed image in description"
           >
             <Paperclip className="h-3 w-3" />
-            {uploadDescriptionImage.isPending ? "Uploading..." : "Image"}
+            {uploadDescriptionImage.isPending ? "Uploading..." : "Embed image"}
           </button>
 
           {/* More (dates) */}
