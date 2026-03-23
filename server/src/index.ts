@@ -228,7 +228,7 @@ export async function startServer(): Promise<StartedServer> {
     }
   }
   
-  let db;
+  let db: ReturnType<typeof createDb>;
   let embeddedPostgres: EmbeddedPostgresInstance | null = null;
   let embeddedPostgresStartedByThisProcess = false;
   let migrationSummary: MigrationSummary = "skipped";
@@ -487,6 +487,7 @@ export async function startServer(): Promise<StartedServer> {
     allowedHostnames: config.allowedHostnames,
     bindHost: config.host,
     authReady,
+    authDisableSignUp: config.authDisableSignUp,
     companyDeletionEnabled: config.companyDeletionEnabled,
     betterAuthHandler,
     resolveSession,
